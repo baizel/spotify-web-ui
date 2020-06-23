@@ -1,6 +1,7 @@
-var socket = "{{socket}}";
-var token = "{{token}}"
-var connection = new WebSocket(socket);
+var socket = undefined;
+var token = undefined;
+var connection = undefined;
+var is_paused = true;
 
 $(document).ready(function () {
     $('.tabs').tabs();
@@ -9,29 +10,65 @@ $(document).ready(function () {
             $("#songsRes ul").empty();
         }
     });
-    addOn(5);
+    $.ajax({
+        url: "/api/spotify/token",
+        success: function (data) {
+            token = data.result
+        }
+    })
+    $.ajax({
+        url: "/api/web/addr",
+        success: function (data) {
+            socket = data.result;
+            connection = new WebSocket(socket)
+            addOn(5);
+        },
+        error: function (data) {
+            document.getElementById("SongName").innerHTML = "Error Connecting to Socket";
+            document.getElementById("SongDescription").innerHTML = "";
+        }
+    })
+    setInterval(function () {
+        if (!is_paused) {
+            let val = document.getElementById("seekAudio");
+            val.value = parseInt(val.value) + 500;
+            document.getElementById("songCurrent").innerHTML = millisToMinutesAndSeconds(parseInt(val.value));
+        }
+    }, 500);
 });
 
 $("#searchForm").submit(function (e) {
     e.preventDefault();
 });
-function updateImage() {
 
+function millisToMinutesAndSeconds(millis) {
+    var minutes = Math.floor(millis / 60000);
+    var seconds = ((millis % 60000) / 1000).toFixed(0);
+    return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 }
+
+function updateImage() {
+    document.getElementById("albumcover").src = "/api/spotify/cached-album-cover?cachebreak" + new Date().getTime();
+}
+
+function updateSeekInfo(state) {
+    document.getElementById("seekAudio").max = state.track.duration_ms;
+    document.getElementById("seekAudio").value = state.playback_position;
+    document.getElementById("songLen").innerHTML = millisToMinutesAndSeconds(state.track.duration_ms);
+}
+
 function addOn(maxTries) {
     connection = new WebSocket(socket);
     connection.onmessage = function (m) {
         msg = JSON.parse(m.data);
         console.log(msg);
-        if (Object.keys(msg).length !== 0) {
-            (msg["is_paused"]) ? document.getElementById("PlayIcon").innerHTML = "play_arrow" : document.getElementById("PlayIcon").innerHTML = "pause";
-            document.getElementById("SongName").innerHTML = msg["track"]["name"];
-            document.getElementById("SongDescription").innerHTML = "By " + msg["track"]["artist"]["name"]
-            document.getElementById("albumcover").src = "/api/current-image"
-            populateQueue(JSON.parse(msg.queue));
-        } else {
-            document.getElementById("albumcover").src = "/api/current-image"
-        }
+        is_paused = msg["is_paused"];
+        (msg["is_paused"]) ? document.getElementById("PlayIcon").innerHTML = "play_arrow" : document.getElementById("PlayIcon").innerHTML = "pause";
+        document.getElementById("SongName").innerHTML = msg["track"]["name"];
+        document.getElementById("SongDescription").innerHTML = "By " + msg["track"]["artist"]["name"]
+        updateImage();
+        updateSeekInfo(msg);
+        // populateQueue(JSON.parse(msg.queue));
     };
     connection.onclose = function m(uri, protocol) {
         console.log("on close");
@@ -64,6 +101,10 @@ function onPrevious() {
     connection.send(JSON.stringify({'payload': 'previous'}));
 }
 
+function onSeek() {
+    connection.send(JSON.stringify({'payload': 'seek', 'position': document.getElementById("seekAudio").value}));
+}
+
 function search() {
     let q = $("#songSearch").val();
     document.getElementById("searchArea").style.visibility = "hidden";
@@ -75,7 +116,6 @@ function search() {
         success: function (data) {
             var songs = data.tracks.items;
             for (i of songs) {
-                console.log(i);
                 let res =
                     '<li>' +
                     '<div class="row">' +
