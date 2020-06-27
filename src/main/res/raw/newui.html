@@ -37,9 +37,11 @@
     .card {
         min-height: 65vh;
     }
+
     .card-content {
         min-height: 65vh;
     }
+
     .card-action {
         background-color: initial !important;
     }
@@ -73,7 +75,10 @@
     input[type=range] + .thumb.active .value {
         color: white;
     }
-
+    /*Hides thumb  popup slider when dragging slider for audio seek */
+    .thumb {
+        visibility: hidden;
+    }
     .card .card-action {
         border-top: 0;
     }
@@ -81,6 +86,8 @@
     .song-info {
         margin: 20px;
     }
+
+
 
     /*#SongName{*/
     /*    font-size: 5em;*/
@@ -107,7 +114,8 @@
                                 </div>
                             </div>
                             <div class="center col s12">
-                                <img id= "albumcover" src="https://via.placeholder.com/250" width="400px" alt="album cover"
+                                <img id="albumcover" src="https://via.placeholder.com/250" width="400px"
+                                     alt="album cover"
                                      class="circle responsive-img">
                             </div>
                             <div class="center col s12 row song-info">
@@ -122,11 +130,12 @@
                         <div id="player-control">
                             <div class="row">
                                 <div>
-                                    <p class="col s1 center white-text">0:00</p>
+                                    <p id="songCurrent" class="col s1 center white-text">0:00</p>
                                     <p class="col s10 range-field">
-                                        <input type="range" min="0" max="1000" id="seekAudio" value="0"/>
+                                        <input type="range" min="0" max="100000" id="seekAudio" value="0"
+                                               onchange="onSeek()"/>
                                     </p>
-                                    <p class="col s1 center white-text">-:--</p>
+                                    <p id="songLen" class="col s1 center white-text">-:--</p>
 
                                 </div>
                                 <div class="center col s4">
