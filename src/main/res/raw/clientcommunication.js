@@ -1,6 +1,6 @@
-var socket = "{{socket}}";
-var token = "{{token}}"
-var connection = new WebSocket(socket);
+var socket =  undefined;
+var token = undefined;
+var connection = undefined;
 
 $(document).ready(function () {
     $('.tabs').tabs();
@@ -9,7 +9,24 @@ $(document).ready(function () {
             $("#songsRes ul").empty();
         }
     });
-    addOn(5);
+    $.ajax({
+        url: "/api/spotify/token",
+        success: function (data) {
+            token = data.result
+        }
+    })
+    $.ajax({
+        url: "/api/web/addr",
+        success: function (data) {
+            socket = data.result;
+            connection = new WebSocket(socket)
+            addOn(5);
+        },
+        error: function (data) {
+            document.getElementById("SongName").innerHTML ="Error Connecting to Socket";
+            document.getElementById("SongDescription").innerHTML = "";
+        }
+    })
 });
 
 $("#searchForm").submit(function (e) {
