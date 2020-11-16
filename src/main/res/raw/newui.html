@@ -75,10 +75,12 @@
     input[type=range] + .thumb.active .value {
         color: white;
     }
+
     /*Hides thumb  popup slider when dragging slider for audio seek */
     .thumb {
         visibility: hidden;
     }
+
     .card .card-action {
         border-top: 0;
     }
@@ -87,14 +89,45 @@
         margin: 20px;
     }
 
-
-
+    .modal {
+        border-radius: 7px;
+        background-color: rgba(255, 246, 231, 0.89);
+    }
+    /* label color */
+    .input-field label {
+        color: #000 !important;
+    }
+    /* label focus color */
+    .input-field input[type=text]:focus + label {
+        color: #000 !important;
+    }
+    /* label underline focus color */
+    .input-field input[type=text]:focus {
+        border-bottom: 1px solid #000 !important;
+        box-shadow: 0 1px 0 0 #000 !important;
+    }
+    /* valid color */
+    .input-field input[type=text].valid {
+        border-bottom: 1px solid #000 !important;
+        box-shadow: 0 1px 0 0 #000 !important;
+    }
+    /* invalid color */
+    .input-field input[type=text].invalid {
+        border-bottom: 1px solid #000 !important;
+        box-shadow: 0 1px 0 0 #000 !important;
+    }
+    /* icon prefix focus color */
+    .input-field .prefix.active {
+        color: #000 !important;
+    }
     /*#SongName{*/
     /*    font-size: 5em;*/
     /*}*/
     /*#SongDescription {*/
     /*    font-size: 2em;*/
     /*}*/
+    /*}*/
+
 
 </style>
 <body>
@@ -105,12 +138,18 @@
                 <div class="card" id="player-body">
                     <div class="card-content">
                         <div class="row">
-                            <div class="top-bar">
-                                <div class="col s1 center">
-                                    <i class="material-icons medium white-text">queue_music</i>
+                            <div class="row top-bar">
+                                <div class="col s10 left">
+                                    <a class="modal-trigger" href="#queuePop">
+                                        <i class="material-icons medium white-text">queue_music</i>
+                                    </a>
                                 </div>
-                                <div class="col offset-s9 s1 offset-s1 right">
-                                    <i class="material-icons medium white-text">add</i>
+                                <div class="col s2">
+                                    <div class="right">
+                                        <a class="modal-trigger" href="#searchPop">
+                                            <i class="material-icons medium white-text">add</i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                             <div class="center col s12">
@@ -152,6 +191,30 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!---------queue modal -------->
+    <div id="queuePop" class="modal">
+        <div class="modal-content">
+            <h4>Queue</h4>
+            <ul class="collection" id="queueCollection">
+            </ul>
+        </div>
+    </div>
+    <!---------search modal -------->
+    <div id="searchPop" class="modal">
+        <div class="modal-content">
+            <h6 class="center">Search for a song</h6>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input placeholder="Search or Paste Spotify URI" id="search_for_song" type="text">
+                    <label for="search_for_song">Search for a song or add a spotify URI to add to the queue </label>
+                </div>
+                <div class="col s12">
+                    <ul class="collection" id="searchColl">
+                    </ul>
                 </div>
             </div>
         </div>

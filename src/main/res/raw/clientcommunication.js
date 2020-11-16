@@ -1,23 +1,38 @@
+//TODO: Cache results of spotify api
 var socket = undefined;
 var token = undefined;
 var connection = undefined;
 var is_paused = true;
+// var host = window.location.host;
+var host = "http://192.168.1.28:8080";
+
+function delay(callback, ms) {
+    var timer = 0;
+    return function () {
+        var context = this, args = arguments;
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+            callback.apply(context, args);
+        }, ms || 0);
+    };
+}
 
 $(document).ready(function () {
+    $('#search_for_song').keyup(delay(function (e) {
+        search(20)
+    }, 600));
+
     $('.tabs').tabs();
-    $('#modal').modal({
-        onCloseEnd: function () {
-            $("#songsRes ul").empty();
-        }
-    });
+    $('.modal').modal({});
+    populateQueue([]);
     $.ajax({
-        url: "/api/spotify/token",
+        url: `${host}/api/spotify/token`,
         success: function (data) {
             token = data.result
         }
     })
     $.ajax({
-        url: "/api/web/addr",
+        url: `${host}/api/web/addr`,
         success: function (data) {
             socket = data.result;
             connection = new WebSocket(socket)
@@ -48,7 +63,7 @@ function millisToMinutesAndSeconds(millis) {
 }
 
 function updateImage() {
-    document.getElementById("albumcover").src = "/api/spotify/cached-album-cover?cachebreak" + new Date().getTime();
+    document.getElementById("albumcover").src = `${host}/api/spotify/cached-album-cover?cachebreak${new Date().getTime()}`;
 }
 
 function updateSeekInfo(state) {
@@ -68,7 +83,7 @@ function addOn(maxTries) {
         document.getElementById("SongDescription").innerHTML = "By " + msg["track"]["artist"]["name"]
         updateImage();
         updateSeekInfo(msg);
-        // populateQueue(JSON.parse(msg.queue));
+        populateQueue(msg.queue);
     };
     connection.onclose = function m(uri, protocol) {
         console.log("on close");
@@ -105,50 +120,55 @@ function onSeek() {
     connection.send(JSON.stringify({'payload': 'seek', 'position': document.getElementById("seekAudio").value}));
 }
 
-function search() {
-    let q = $("#songSearch").val();
-    document.getElementById("searchArea").style.visibility = "hidden";
-    $.ajax({
-        url: "https://api.spotify.com/v1/search?q=" + q + "&type=track&limit=15",
-        headers: {
-            'Authorization': 'Bearer ' + token
-        },
-        success: function (data) {
-            var songs = data.tracks.items;
-            for (i of songs) {
-                let res =
-                    '<li>' +
-                    '<div class="row">' +
-                    '    <div class="card horizontal grey">' +
-                    '      <div class="card-image">' +
-                    '        <img src="' + i.album.images[0].url + '" alt="result" height="128">' +
-                    '      </div>' +
-                    '      <div class="card-stacked">' +
-                    '        <div class="card-content">' +
-                    '          <p>' + i.name + ' by ' + i.artists[0].name + '</p>' +
-                    '        </div>' +
-                    '        <div class="card-action black-text">' +
-                    '           <a href="#" onclick="playURI(\'' + i.uri + '\')" >Add to Queue<i  class="material-icons right">add</i></a>' +
-                    '        </div>' +
-                    '      </div>' +
-                    '    </div>' +
-                    '  </div>' +
-                    '</div>' +
-                    '</li>';
+function search(limit) {
+    let q = $("#search_for_song").val();
+    console.log(`${q} and if ${q == true}`)
+    if (q) {
+        $.ajax({
+                url: `https://api.spotify.com/v1/search?q=${q}&type=track&limit=${limit}`,
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                success: function (data) {
+                    console.log("LOG Search yay")
 
-
-                $("#songsRes ul").append(res);
+                    let songs = data.tracks.items;
+                    let res = "";
+                    for (let tracks of data.tracks.items) {
+                        let id = tracks.uri.split(":")[2]
+                        res = res + `
+                            <li class="collection-item avatar">
+                                <img height="64" src="${tracks.album.images[0].url}" alt="albumArt" class="circle">
+                                <span class="title">${tracks.name}</span>
+                                <p>${tracks.artists[0].name}</p>
+                                <a id="${id}" href="#" onclick="addToQueue('${tracks.uri}','${id}')" class="secondary-content scale-transition">
+                                    <i class="material-icons">add</i>
+                                </a>
+                                <a id="${id}check" href="#" class="secondary-content scale-transition scale-out">
+                                    <i class="material-icons">check</i>
+                                </a>
+                            </li>`;
+                    }
+                    if (!res) {
+                        res = `<li class="collection-item avatar">
+                                    <img height="64" src="http://pixelartmaker.com/art/8e901395c4a3dd4.png" alt="albumArt" class="circle">
+                                    <span class="title">No Search Reuslt</span>
+                                    <p>Nothing to show here</p>
+                                </li>`;
+                    }
+                    document.getElementById("searchColl").innerHTML = res;
+                },
+                error: function (error) {
+                    console.log("LOG Search errr")
+                    document.getElementById("searchColl").innerHTML = `<li class="collection-item avatar">
+                        <img height="64" src="http://pixelartmaker.com/art/8e901395c4a3dd4.png" alt="albumArt" class="circle">
+                        <span class="title">An Error Occurred</span>
+                        <p>${error}</p>
+                    </li>`;
+                }
             }
-            songs = [];
-            $('#modal').modal('open');
-            document.getElementById("searchArea").style.visibility = "visible";
-        },
-        error: function () {
-            document.getElementById("searchArea").style.visibility = "visible";
-        }
-    });
-
-
+        );
+    }
 }
 
 function onNext() {
@@ -157,6 +177,13 @@ function onNext() {
 
 function onPlay() {
     connection.send(JSON.stringify({'payload': 'play'}));
+}
+
+function addToQueue(uri, id) {
+    connection.send(JSON.stringify({'payload': 'playUri', 'uri': uri}));
+    console.log(id);
+    $(`#${id}`).addClass('scale-out');
+    $(`#${id}check`).removeClass('scale-out')
 }
 
 function onQueue() {
@@ -170,12 +197,13 @@ function onQueue() {
     }
 }
 
-function playURI(uri) {
-    connection.send(JSON.stringify({'payload': 'playUri', 'uri': uri}));
-    $('#modal').modal('close');
-}
+// function playURI(uri) {
+//     connection.send(JSON.stringify({'payload': 'playUri', 'uri': uri}));
+//     $('#modal').modal('close');
+// }
 
 function populateQueue(queue) {
+    //TODO: get this from server to avoid rate limits by spotify api
     let trackIds = "";
 
     for (let uriQ of queue) {
@@ -190,22 +218,21 @@ function populateQueue(queue) {
             success: function (data) {
                 let res = "";
                 for (let tracks of data.tracks) {
-
-                    res = res + " <li class=\"collection-item avatar grey darken-1\">\n" +
-                        "                    <img height=\"64\" src=" + tracks.album.images[0].url + " alt=\"\" class=\"circle\">\n" +
-                        "                    <span class=\"title\">" + tracks.name + "</span>\n" +
-                        "                    <p>By " + tracks.artists[0].name + " </p>\n" +
-                        "                </li>";
+                    res = res + `<li class="collection-item avatar">\n` +
+                        `                        <img height="64" src="${tracks.album.images[0].url}" alt="albumArt" class="circle">\n` +
+                        `                        <span class="title">${tracks.name}</span>\n` +
+                        `                        <p>${tracks.artists[0].name}</p>\n` +
+                        `                    </li>`;
                 }
                 document.getElementById("queueCollection").innerHTML = res;
             }
         });
     } else {
-        let res = '<li class="collection-item avatar grey darken-1">\n' +
-            '                        <img height="64" src="http://pixelartmaker.com/art/8e901395c4a3dd4.png" alt="" class="circle">\n' +
-            '                        <span class="title">Nothing Added Yet</span>\n' +
-            '                        <p>Add a song and it will appear here!</p>\n' +
-            '                    </li>';
-        document.getElementById("queueCollection").innerHTML = res;
+        let res = `<li class="collection-item avatar">\n` +
+            `                        <img height="64" src="http://pixelartmaker.com/art/8e901395c4a3dd4.png" alt="" class="circle">\n` +
+            `                        <span class="title">Nothing Added Yet</span>\n` +
+            `                        <p>Add a song and it will appear here!</p>\n` +
+            `                    </li>`;
+        document.getElementById("queueCollection").innerHTML = res
     }
 }
