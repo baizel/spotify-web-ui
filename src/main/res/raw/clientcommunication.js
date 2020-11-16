@@ -3,7 +3,7 @@ var socket = undefined;
 var token = undefined;
 var connection = undefined;
 var is_paused = true;
-var host = window.location.host;
+var host = `http://${window.location.host}`;
 
 function delay(callback, ms) {
     var timer = 0;
