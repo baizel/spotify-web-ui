@@ -3,8 +3,7 @@ var socket = undefined;
 var token = undefined;
 var connection = undefined;
 var is_paused = true;
-// var host = window.location.host;
-var host = "http://192.168.1.28:8080";
+var host = window.location.host;
 
 function delay(callback, ms) {
     var timer = 0;
