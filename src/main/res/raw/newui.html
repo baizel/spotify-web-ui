@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -93,33 +94,40 @@
         border-radius: 7px;
         background-color: rgba(255, 246, 231, 0.89);
     }
+
     /* label color */
     .input-field label {
         color: #000 !important;
     }
+
     /* label focus color */
     .input-field input[type=text]:focus + label {
         color: #000 !important;
     }
+
     /* label underline focus color */
     .input-field input[type=text]:focus {
         border-bottom: 1px solid #000 !important;
         box-shadow: 0 1px 0 0 #000 !important;
     }
+
     /* valid color */
     .input-field input[type=text].valid {
         border-bottom: 1px solid #000 !important;
         box-shadow: 0 1px 0 0 #000 !important;
     }
+
     /* invalid color */
     .input-field input[type=text].invalid {
         border-bottom: 1px solid #000 !important;
         box-shadow: 0 1px 0 0 #000 !important;
     }
+
     /* icon prefix focus color */
     .input-field .prefix.active {
         color: #000 !important;
     }
+
     /*#SongName{*/
     /*    font-size: 5em;*/
     /*}*/
@@ -204,17 +212,25 @@
         </div>
     </div>
     <!---------search modal -------->
-    <div id="searchPop" class="modal">
+    <div id="searchPop" class="modal bottom-sheet">
         <div class="modal-content">
-            <h6 class="center">Search for a song</h6>
+            <h4 class="center">Search for a song</h4>
             <div class="row">
-                <div class="input-field col s12">
-                    <input placeholder="Search or Paste Spotify URI" id="search_for_song" type="text">
-                    <label for="search_for_song">Search for a song or add a spotify URI to add to the queue </label>
-                </div>
-                <div class="col s12">
-                    <ul class="collection" id="searchColl">
-                    </ul>
+                <div class="col s6 offset-s3">
+                    <div class="search-wrapper">
+                        <div class="row">
+                            <form class="col s12" action="#">
+                                <div class="input-field">
+                                    <i class="material-icons prefix">search</i>
+                                    <input id="search_for_song" placeholder="Search">
+                                </div>
+                            </form>
+                        </div>
+                        <div id="searchResult">
+                            <ul class="collection" id="searchColl">
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

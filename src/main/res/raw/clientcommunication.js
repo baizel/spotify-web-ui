@@ -4,6 +4,9 @@ var token = undefined;
 var connection = undefined;
 var is_paused = true;
 var host = `http://${window.location.host}`;
+const spotifyEndpoint = "https://api.spotify.com/v1";
+const minSearchLen = 3;
+
 
 function delay(callback, ms) {
     var timer = 0;
@@ -18,7 +21,9 @@ function delay(callback, ms) {
 
 $(document).ready(function () {
     $('#search_for_song').keyup(delay(function (e) {
-        search(20)
+        if ($("#search_for_song").val().length > minSearchLen) {
+            search(20)
+        }
     }, 600));
 
     $('.tabs').tabs();
@@ -49,10 +54,6 @@ $(document).ready(function () {
             document.getElementById("songCurrent").innerHTML = millisToMinutesAndSeconds(parseInt(val.value));
         }
     }, 500);
-});
-
-$("#searchForm").submit(function (e) {
-    e.preventDefault();
 });
 
 function millisToMinutesAndSeconds(millis) {
@@ -119,51 +120,54 @@ function onSeek() {
     connection.send(JSON.stringify({'payload': 'seek', 'position': document.getElementById("seekAudio").value}));
 }
 
-function search(limit) {
-    let q = $("#search_for_song").val();
-    console.log(`${q} and if ${q == true}`)
-    if (q) {
-        $.ajax({
-                url: `https://api.spotify.com/v1/search?q=${q}&type=track&limit=${limit}`,
-                headers: {
-                    'Authorization': 'Bearer ' + token
-                },
-                success: function (data) {
-                    console.log("LOG Search yay")
-
-                    let songs = data.tracks.items;
-                    let res = "";
-                    for (let tracks of data.tracks.items) {
-                        let id = tracks.uri.split(":")[2]
-                        res = res + `
-                            <li class="collection-item avatar">
-                                <img height="64" src="${tracks.album.images[0].url}" alt="albumArt" class="circle">
-                                <span class="title">${tracks.name}</span>
-                                <p>${tracks.artists[0].name}</p>
-                                <a id="${id}" href="#" onclick="addToQueue('${tracks.uri}','${id}')" class="secondary-content scale-transition">
-                                    <i class="material-icons">add</i>
-                                </a>
-                                <a id="${id}check" href="#" class="secondary-content scale-transition scale-out">
-                                    <i class="material-icons">check</i>
-                                </a>
-                            </li>`;
-                    }
-                    if (!res) {
-                        res = `<li class="collection-item avatar">
+function onSearchSuccess(data) {
+    let res = "";
+    for (let tracks of data.tracks.items) {
+        let id = tracks.uri.split(":")[2]
+        res = res + `
+            <li class="collection-item avatar">
+                <img height="64" src="${tracks.album.images[0].url}" alt="albumArt" class="circle">
+                <span class="title">${tracks.name}</span>
+                <p>${tracks.artists[0].name}</p>
+                <a id="${id}" href="#" onclick="addToQueue('${tracks.uri}','${id}')" class="secondary-content scale-transition">
+                    <i class="material-icons">add</i>
+                </a>
+                <a id="${id}check" href="#" class="secondary-content scale-transition scale-out">
+                    <i class="material-icons">check</i>
+                </a>
+            </li>`;
+    }
+    if (!res) {
+        res = `<li class="collection-item avatar">
                                     <img height="64" src="http://pixelartmaker.com/art/8e901395c4a3dd4.png" alt="albumArt" class="circle">
-                                    <span class="title">No Search Reuslt</span>
+                                    <span class="title">No Search Result</span>
                                     <p>Nothing to show here</p>
                                 </li>`;
-                    }
-                    document.getElementById("searchColl").innerHTML = res;
-                },
-                error: function (error) {
-                    console.log("LOG Search errr")
-                    document.getElementById("searchColl").innerHTML = `<li class="collection-item avatar">
+    }
+    document.getElementById("searchColl").innerHTML = res;
+}
+
+function onSearchError(error) {
+    document.getElementById("searchColl").innerHTML = `<li class="collection-item avatar">
                         <img height="64" src="http://pixelartmaker.com/art/8e901395c4a3dd4.png" alt="albumArt" class="circle">
                         <span class="title">An Error Occurred</span>
                         <p>${error}</p>
                     </li>`;
+}
+
+function search(limit) {
+    let q = $("#search_for_song").val();
+    if (q) {
+        $.ajax({
+                url: `${spotifyEndpoint}/search?q=${q}&type=track&limit=${limit}`,
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                success: function (data) {
+                    onSearchSuccess(data);
+                },
+                error: function (error) {
+                    onSearchError(error);
                 }
             }
         );
@@ -196,11 +200,6 @@ function onQueue() {
     }
 }
 
-// function playURI(uri) {
-//     connection.send(JSON.stringify({'payload': 'playUri', 'uri': uri}));
-//     $('#modal').modal('close');
-// }
-
 function populateQueue(queue) {
     //TODO: get this from server to avoid rate limits by spotify api
     let trackIds = "";
@@ -210,7 +209,7 @@ function populateQueue(queue) {
     }
     if (trackIds.length !== 0) {
         $.ajax({
-            url: "https://api.spotify.com/v1/tracks/?ids=" + trackIds,
+            url: `${spotifyEndpoint}/tracks/?ids=${trackIds}`,
             headers: {
                 'Authorization': 'Bearer ' + token
             },
@@ -227,11 +226,14 @@ function populateQueue(queue) {
             }
         });
     } else {
-        let res = `<li class="collection-item avatar">\n` +
+        document.getElementById("queueCollection").innerHTML = `<li class="collection-item avatar">\n` +
             `                        <img height="64" src="http://pixelartmaker.com/art/8e901395c4a3dd4.png" alt="" class="circle">\n` +
             `                        <span class="title">Nothing Added Yet</span>\n` +
             `                        <p>Add a song and it will appear here!</p>\n` +
-            `                    </li>`;
-        document.getElementById("queueCollection").innerHTML = res
+            `                    </li>`
     }
 }
+
+$("#searchForm").submit(function (e) {
+    e.preventDefault();
+});
